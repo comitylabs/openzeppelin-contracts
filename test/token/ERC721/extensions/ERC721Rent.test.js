@@ -17,12 +17,12 @@ contract('ERC721Rent', function (accounts) {
     await this.token.mint(owner, tokenId);
   });
 
-  describe('like a ERC721 that cannot be rented', function () {
+  describe('a contract with no agreement cannot be rented', function () {
     it('is not rented', async function () {
       expect(await this.token.isRented(tokenId)).to.equal(false);
     });
 
-    it('has not agreement contract', async function () {
+    it('has no agreement contract', async function () {
       expect(await this.token.rentAggreementOf(tokenId)).to.equal('0x0000000000000000000000000000000000000000');
     });
 
