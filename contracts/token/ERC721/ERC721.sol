@@ -212,10 +212,10 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Rent, IERC721Metadata {
 
     function acceptRentAgreement(uint256 tokenId) public virtual override {
         require(_rentedOwners[tokenId] == address(0), "ERC721: token is rented");
-        address owner = ERC721.ownerOf(tokenId);
-        require(_msgSender() != owner, "ERC721: rent to current owner");
         IERC721RentAgreement agreement = rentAggreementOf(tokenId);
         require(address(agreement) != address(0), "ERC721: rent without rent agreement");
+        address owner = ERC721.ownerOf(tokenId);
+        require(_msgSender() != owner, "ERC721: rent to current owner");
 
         _rentedOwners[tokenId] = owner;
         _tranferKeepApprovals(owner, _msgSender(), tokenId);
@@ -226,13 +226,16 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Rent, IERC721Metadata {
         address owner = _rentedOwners[tokenId];
         require(owner != address(0), "ERC721: token is not rented");
         IERC721RentAgreement agreement = rentAggreementOf(tokenId);
+        address renter = ERC721.ownerOf(tokenId);
 
         require(
-            _msgSender() == owner || _isApprovedOrOwner(_msgSender(), tokenId),
+            _msgSender() == owner ||
+                _msgSender() == renter ||
+                getApproved(tokenId) == _msgSender() ||
+                isApprovedForAll(owner, _msgSender()),
             "ERC721: stop rent caller is not owner, renter nor approved"
         );
 
-        address renter = ERC721.ownerOf(tokenId);
         delete _rentedOwners[tokenId];
         _tranferKeepApprovals(renter, owner, tokenId);
         agreement.onStopRent(tokenId, _msgSender() == renter ? RentingRole.Renter : RentingRole.OwnerOrApprover);
@@ -402,6 +405,7 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Rent, IERC721Metadata {
 
         // Clear approvals from the previous owner
         _approve(address(0), tokenId);
+        delete _rentAgreements[tokenId];
 
         _balances[from] -= 1;
         _balances[to] += 1;
