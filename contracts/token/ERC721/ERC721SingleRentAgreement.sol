@@ -67,11 +67,15 @@ contract ERC721SingleRentAgreement is Context, IERC721RentAgreement, ERC165 {
     }
 
     // Called when an account accepts a renting contract and wants to start the location.
-    function afterRentStarted(address, address forAddress, uint256 tokenId) public onlyErc721Contract {
+    function afterRentStarted(
+        address,
+        address forAddress,
+        uint256 tokenId
+    ) public onlyErc721Contract {
+        require(block.timestamp <= expirationDate, "rental agreement expired");
         require(renter == forAddress, "Wrong renter.");
-        require(rentStatus == RentStatus.pending, "Rent status has to be pending.");
-        require(rentPaid, "Rent has to be paid first.");
-        require(block.timestamp <= expirationDate, "rental agreement expired.");
+        require(rentStatus == RentStatus.pending, "Rent status has to be pending");
+        require(rentPaid, "Rent has to be paid first");
 
         rentStatus = RentStatus.active;
         startTime = block.timestamp;
@@ -81,9 +85,10 @@ contract ERC721SingleRentAgreement is Context, IERC721RentAgreement, ERC165 {
     }
 
     function payRent() public payable {
+        require(block.timestamp <= expirationDate, "rental agreement expired");
+        require(!rentPaid, "Rent already paid");
         require(_msgSender() == renter, "Renter has to pay the rental fees");
         require(msg.value == rentalFees, "Wrong rental fees amount");
-        require(!rentPaid, "Rent already paid");
 
         rentPaid = true;
         balances[owner] += msg.value;
