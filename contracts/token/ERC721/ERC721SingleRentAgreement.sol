@@ -108,13 +108,13 @@ contract ERC721SingleRentAgreement is IERC721RentAgreement, ERC165 {
 
     function _stopRentRenter() private {
         // Early rent termination.
-        if (startTime + rentDuration >= block.timestamp) {
+        if (block.timestamp <= startTime + rentDuration) {
             uint256 _rentalPeriod = block.timestamp - startTime;
-            uint256 _newRentalFees = _rentalPeriod / rentDuration;
+            uint256 _rentalRate = (100 * _rentalPeriod) / rentDuration;
 
             // Update the balances to reflect the rental period.
-            balances[renter] = rentalFees - _newRentalFees;
-            balances[owner] = _newRentalFees;
+            balances[renter] = (rentalFees * (100 - _rentalRate)) / 100;
+            balances[owner] = (rentalFees * _rentalRate) / 100;
         }
     }
 

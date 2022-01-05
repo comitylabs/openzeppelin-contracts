@@ -19,7 +19,7 @@ contract('ERC721SingleRentAgreement', function (accounts) {
     this.expirationDate = this.latestTime.add(this.exp);
 
     // Fees.
-    this.rentalFees = new BN('10000');
+    this.rentalFees = new BN('20000');
 
     // Accounts.
     [this.owner, this.renter] = accounts;
@@ -120,9 +120,20 @@ contract('ERC721SingleRentAgreement', function (accounts) {
       await expectRevert(this.erc721Rent.stopRentAgreement(this.tokenId, { from: this.owner }), 'Rental period not finished yet');
     });
 
+    it('Owner is able to finish rent after the rental period is over', async function () {
+      await startRent(this.erc721SingleRentAgreement, this.renter, this.rentalFees, this.erc721Rent, this.tokenId);
+      await time.increase(1809600); // Increase Ganache time by 2 weeks.
+      await this.erc721Rent.stopRentAgreement(this.tokenId, { from: this.owner });
+    });
+
     it('Renter is able to finish rent before the rental period is over', async function () {
       await startRent(this.erc721SingleRentAgreement, this.renter, this.rentalFees, this.erc721Rent, this.tokenId);
+      await time.increase(302400); // Increase Ganache time by 3.5 days.
       await this.erc721Rent.stopRentAgreement(this.tokenId, { from: this.renter });
+      const renterBalance = await this.erc721SingleRentAgreement.balances(this.renter);
+      const ownerBalance = await this.erc721SingleRentAgreement.balances(this.owner);
+      assert.equal(renterBalance, 1000);
+      assert.equal(ownerBalance, 1000);
     });
   });
 });
