@@ -61,21 +61,17 @@ contract ERC721SingleRentAgreement is Context, IERC721RentAgreement, ERC165 {
     }
 
     // Called when an owner of an NFT changes or removes its NTF renting contract.
-    function onChangeAgreement(uint256) public view override onlyErc721Contract {
-        require(rentStatus == RentStatus.pending, "Rent agreement has to be pending to be update.");
+    function afterRentAgreementReplaced(uint256) public view override onlyErc721Contract {
+        require(rentStatus == RentStatus.pending, "Rent agreement has to be pending to be updated.");
         require(!rentPaid, "Rent already paid");
     }
 
     // Called when an account accepts a renting contract and wants to start the location.
-    function onStartRent(
-        address,
-        address forAddress,
-        uint256 tokenId
-    ) public override onlyErc721Contract {
-        require(renter == forAddress, "Wrong renter");
-        require(rentStatus == RentStatus.pending, "Rent status has to be pending");
-        require(rentPaid, "Rent has to be paid first");
-        require(block.timestamp <= expirationDate, "rental agreement expired");
+    function afterRentStarted(address, address forAddress, uint256 tokenId) public onlyErc721Contract {
+        require(renter == forAddress, "Wrong renter.");
+        require(rentStatus == RentStatus.pending, "Rent status has to be pending.");
+        require(rentPaid, "Rent has to be paid first.");
+        require(block.timestamp <= expirationDate, "rental agreement expired.");
 
         rentStatus = RentStatus.active;
         startTime = block.timestamp;
@@ -97,7 +93,7 @@ contract ERC721SingleRentAgreement is Context, IERC721RentAgreement, ERC165 {
     }
 
     // Called when the owner or the renter wants to stop an active rent agreement.
-    function onStopRent(address from, uint256 tokenId) public onlyErc721Contract {
+    function afterRentStopped(address from, uint256 tokenId) public onlyErc721Contract {
         require(rentStatus == RentStatus.active, "Rent status has to be active");
         rentStatus = RentStatus.finished;
 

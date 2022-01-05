@@ -53,7 +53,7 @@ contract('ERC721SingleRentAgreement', function (accounts) {
     });
 
     it('Only erc721 contract can update state', async function () {
-      await expectRevert(this.erc721SingleRentAgreement.onChangeAgreement(this.tokenId, { from: this.renter }),
+      await expectRevert(this.erc721SingleRentAgreement.afterRentAgreementReplaced(this.tokenId, { from: this.renter }),
         'Only erc721Contract contract can modify rent agreement state');
     });
 
@@ -82,14 +82,14 @@ contract('ERC721SingleRentAgreement', function (accounts) {
     });
 
     it('Enable to change agreement when pending and not paid', async function () {
-      await this.erc721SingleRentAgreement.onChangeAgreement(this.tokenId, { from: this.erc721Address });
+      await this.erc721SingleRentAgreement.afterRentAgreementReplaced(this.tokenId, { from: this.erc721Address });
     });
 
     it('Cannot change agreement after the rent has been paid', async function () {
       // Pay rent.
       await this.erc721SingleRentAgreement.payRent({ from: this.renter, value: this.rentalFees });
       await expectRevert(
-        this.erc721SingleRentAgreement.onChangeAgreement(this.tokenId, { from: this.erc721Address }), 'Rent already paid');
+        this.erc721SingleRentAgreement.afterRentAgreementReplaced(this.tokenId, { from: this.erc721Address }), 'Rent already paid');
     });
 
     it('Cannot start rent after expiration date', async function () {
@@ -102,7 +102,7 @@ contract('ERC721SingleRentAgreement', function (accounts) {
 
       // Assert cannot start rent after expiration date.
       await expectRevert(
-        this.erc721SingleRentAgreement.onStartRent.call(this.renter, this.renter, this.tokenId, { from: this.erc721Address }),
+        this.erc721SingleRentAgreement.afterRentStarted.call(this.renter, this.renter, this.tokenId, { from: this.erc721Address }),
         'rental agreement expired',
       );
     });
