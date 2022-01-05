@@ -210,16 +210,16 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Rent, IERC721Metadata {
         return _rentAgreements[tokenId];
     }
 
-    function acceptRentAgreement(uint256 tokenId) public virtual override {
+    function acceptRentAgreement(address forAdress, uint256 tokenId) public virtual override {
         require(_rentedOwners[tokenId] == address(0), "ERC721: token is rented");
         IERC721RentAgreement agreement = rentAggreementOf(tokenId);
         require(address(agreement) != address(0), "ERC721: rent without rent agreement");
         address owner = ERC721.ownerOf(tokenId);
-        require(_msgSender() != owner, "ERC721: rent to current owner");
+        require(forAdress != owner, "ERC721: rent to current owner");
 
         _rentedOwners[tokenId] = owner;
-        _tranferKeepApprovals(owner, _msgSender(), tokenId);
-        agreement.onStartRent(tokenId, _msgSender());
+        _tranferKeepApprovals(owner, forAdress, tokenId);
+        agreement.onStartRent(_msgSender(), forAdress, tokenId);
     }
 
     function stopRentAgreement(uint256 tokenId) public virtual override {
@@ -228,17 +228,9 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Rent, IERC721Metadata {
         IERC721RentAgreement agreement = rentAggreementOf(tokenId);
         address renter = ERC721.ownerOf(tokenId);
 
-        require(
-            _msgSender() == owner ||
-                _msgSender() == renter ||
-                getApproved(tokenId) == _msgSender() ||
-                isApprovedForAll(owner, _msgSender()),
-            "ERC721: stop rent caller is not owner, renter nor approved"
-        );
-
         delete _rentedOwners[tokenId];
         _tranferKeepApprovals(renter, owner, tokenId);
-        agreement.onStopRent(tokenId, _msgSender() == renter ? RentingRole.Renter : RentingRole.OwnerOrApprover);
+        agreement.onStopRent(_msgSender(), tokenId);
     }
 
     function isRented(uint256 tokenId) public view virtual override returns (bool) {

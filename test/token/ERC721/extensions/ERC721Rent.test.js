@@ -32,11 +32,11 @@ contract('ERC721Rent', function (accounts) {
 
     it('cannot be rented', async function () {
       await expectRevert(
-        this.token.acceptRentAgreement(tokenId, { from: owner }),
+        this.token.acceptRentAgreement(owner, tokenId),
         'ERC721: rent without rent agreement',
       );
       await expectRevert(
-        this.token.acceptRentAgreement(tokenId, { from: renter }),
+        this.token.acceptRentAgreement(renter, tokenId),
         'ERC721: rent without rent agreement',
       );
     });
@@ -64,14 +64,14 @@ contract('ERC721Rent', function (accounts) {
 
     it('cannot be rented by its owner', async function () {
       await expectRevert(
-        this.token.acceptRentAgreement(tokenId, { from: owner }),
+        this.token.acceptRentAgreement(owner, tokenId),
         'ERC721: rent to current owner',
       );
     });
 
     it('can be rented by someone else', async function () {
       expectEvent(
-        await this.token.acceptRentAgreement(tokenId, { from: renter }),
+        await this.token.acceptRentAgreement(renter, tokenId),
         'Transfer',
         { from: owner, to: renter, tokenId: tokenId },
       );
@@ -109,33 +109,20 @@ contract('ERC721Rent', function (accounts) {
       );
     });
 
-    it('cannot be stopped by someone else', async function () {
-      await expectRevert(
-        this.token.stopRentAgreement(tokenId, { from: renter2 }),
-        'ERC721: stop rent caller is not owner, renter nor approved',
-      );
-    });
-
     it('does not allow the renter to change aprovals', async function () {
       await expectRevert(
         this.token.approve(renter2, tokenId, { from: renter }),
         'ERC721: approve caller is not owner nor approved for all',
       );
-
-      await this.token.setApprovalForAll(renter2, true, { from: renter });
-      await expectRevert(
-        this.token.stopRentAgreement(tokenId, { from: renter2 }),
-        'ERC721: stop rent caller is not owner, renter nor approved',
-      );
     });
 
     it('cannot be rented again', async function () {
       await expectRevert(
-        this.token.acceptRentAgreement(tokenId, { from: renter }),
+        this.token.acceptRentAgreement(renter, tokenId),
         'ERC721: token is rented',
       );
       await expectRevert(
-        this.token.acceptRentAgreement(tokenId, { from: renter2 }),
+        this.token.acceptRentAgreement(renter2, tokenId),
         'ERC721: token is rented',
       );
     });
@@ -163,7 +150,7 @@ contract('ERC721Rent', function (accounts) {
 
     it('can be rented again by someone else', async function () {
       expectEvent(
-        await this.token.acceptRentAgreement(tokenId, { from: renter2 }),
+        await this.token.acceptRentAgreement(renter2, tokenId),
         'Transfer',
         { from: owner, to: renter2, tokenId: tokenId },
       );
@@ -181,23 +168,9 @@ contract('ERC721Rent', function (accounts) {
       );
     });
 
-    it('can be stopped by someone approved by the owner', async function () {
-      expectEvent(
-        await this.token.acceptRentAgreement(tokenId, { from: renter2 }),
-        'Transfer',
-        { from: owner, to: renter2, tokenId: tokenId },
-      );
-      await this.token.approve(renter, tokenId, { from: owner });
-      expectEvent(
-        await this.token.stopRentAgreement(tokenId, { from: renter }),
-        'Transfer',
-        { from: renter2, to: owner, tokenId: tokenId },
-      );
-    });
-
     it('cannot change the agreement during a rental', async function () {
       expectEvent(
-        await this.token.acceptRentAgreement(tokenId, { from: renter2 }),
+        await this.token.acceptRentAgreement(renter2, tokenId),
         'Transfer',
         { from: owner, to: renter2, tokenId: tokenId },
       );
@@ -228,14 +201,14 @@ contract('ERC721Rent', function (accounts) {
 
     it('cannot start the rental aggreement', async function () {
       await expectRevert(
-        this.token.acceptRentAgreement(tokenId, { from: renter }),
+        this.token.acceptRentAgreement(renter, tokenId),
         'Failed from agreement contract',
       );
     });
 
     it('cannot stop the rental aggreement', async function () {
       await this.agreement.setFail(false);
-      this.token.acceptRentAgreement(tokenId, { from: renter });
+      this.token.acceptRentAgreement(renter, tokenId);
       await this.agreement.setFail(true);
       await expectRevert(
         this.token.stopRentAgreement(tokenId, { from: owner }),
@@ -246,24 +219,12 @@ contract('ERC721Rent', function (accounts) {
         'Failed from agreement contract',
       );
     });
-
-    it('only allows the renter to stop', async function () {
-      await this.agreement.setFail(false);
-      await this.agreement.setFailForOwner(true);
-      await expectRevert(
-        this.token.stopRentAgreement(tokenId, { from: owner }),
-        'Failed from agreement contract',
-      );
-      expectEvent(
-        await this.token.stopRentAgreement(tokenId, { from: renter }),
-        'Transfer',
-        { from: renter, to: owner, tokenId: tokenId },
-      );
-    });
   });
 
   describe('when a token changes owner', async function () {
     it('removes the agreement contract', async function () {
+      await this.agreement.setFail(false);
+      await this.token.stopRentAgreement(tokenId, { from: renter });
       expect(await this.token.rentAggreementOf(tokenId)).to.equal(
         this.agreement.address,
       );
