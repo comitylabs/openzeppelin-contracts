@@ -17,13 +17,13 @@ interface IERC721RentAgreement is IERC165 {
 
     /**
      * Called when an account accepts a renting contract and wants to start the location.
-     * `from` is the address that called the holder, `forAdress` is the rent beneficiary.
+     * `from` is the address that called the holder, `forAddress` is the rent beneficiary.
      *
      * May throw if the contract does not accept the rent.
      */
     function onStartRent(
         address from,
-        address forAdress,
+        address forAddress,
         uint256 tokenId
     ) external;
 
@@ -62,11 +62,11 @@ interface IERC721Rent is IERC721 {
      *
      * Requirements:
      *
-     * - `forAdress` must not own the NFT
+     * - `forAddress` must not own the NFT
      * - `tokenId` token must not be currently rented.
      * - the renting agreement contract must accept the rental.
      */
-    function acceptRentAgreement(address forAdress, uint256 tokenId) external;
+    function acceptRentAgreement(address forAddress, uint256 tokenId) external;
 
     /**
      * Stop the rental of an NFT. May throw if onStopRent() throws.
