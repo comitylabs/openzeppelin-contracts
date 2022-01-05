@@ -194,7 +194,7 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Rent, IERC721Metadata {
         _safeTransfer(from, to, tokenId, _data);
     }
 
-    function setRentAgreement(IERC721RentAgreement agreement, uint256 tokenId) public override {
+    function setRentAgreement(IERC721RentAgreement agreement, uint256 tokenId) public override virtual {
         require(_rentedOwners[tokenId] == address(0), "ERC721: token is rented");
         require(_isApprovedOrOwner(_msgSender(), tokenId), "ERC721: transfer caller is not owner nor approved");
 
@@ -206,11 +206,11 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Rent, IERC721Metadata {
         }
     }
 
-    function rentAggreementOf(uint256 tokenId) public view virtual override returns (IERC721RentAgreement) {
+    function rentAggreementOf(uint256 tokenId) public view override virtual returns (IERC721RentAgreement) {
         return _rentAgreements[tokenId];
     }
 
-    function acceptRentAgreement(uint256 tokenId) public virtual override {
+    function acceptRentAgreement(uint256 tokenId) public override virtual {
         require(_rentedOwners[tokenId] == address(0), "ERC721: token is rented");
         address owner = ERC721.ownerOf(tokenId);
         require(_msgSender() != owner, "ERC721: rent to current owner");
@@ -222,7 +222,7 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Rent, IERC721Metadata {
         agreement.onStartRent(tokenId, _msgSender());
     }
 
-    function stopRentAgreement(uint256 tokenId) public virtual override {
+    function stopRentAgreement(uint256 tokenId) public override virtual {
         address owner = _rentedOwners[tokenId];
         require(owner != address(0), "ERC721: token is not rented");
         IERC721RentAgreement agreement = rentAggreementOf(tokenId);
@@ -238,7 +238,7 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Rent, IERC721Metadata {
         agreement.onStopRent(tokenId, _msgSender() == renter ? RentingRole.Renter : RentingRole.OwnerOrApprover);
     }
 
-    function isRented(uint256 tokenId) public view virtual override returns (bool) {
+    function isRented(uint256 tokenId) public view override virtual returns (bool) {
         require(_exists(tokenId), "ERC721: nonexistent token");
         return _rentedOwners[tokenId] != address(0);
     }
