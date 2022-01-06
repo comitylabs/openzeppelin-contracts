@@ -56,7 +56,7 @@ contract ERC721SingleRentAgreement is Context, IERC721RentAgreement, ERC165 {
 
     // ===== Modifiers ====== //
     modifier onlyErc721Contract() {
-        require(_msgSender() == erc721Contract, "Only erc721Contract contract can modify rent agreement state");
+        require(_msgSender() == erc721Contract, "ERC721SingleRentAgreement: only erc721Contract contract can modify rent agreement state");
         _;
     }
 
@@ -74,7 +74,7 @@ contract ERC721SingleRentAgreement is Context, IERC721RentAgreement, ERC165 {
         address,
         address forAddress,
         uint256 tokenId
-    ) public onlyErc721Contract {
+    ) public override onlyErc721Contract {
         require(block.timestamp <= expirationDate, "ERC721SingleRentAgreement: rental agreement expired");
         require(renter == forAddress, "ERC721SingleRentAgreement: wrong renter.");
         require(rentStatus == RentStatus.pending, "ERC721SingleRentAgreement: rent status has to be pending");
@@ -101,7 +101,7 @@ contract ERC721SingleRentAgreement is Context, IERC721RentAgreement, ERC165 {
     }
 
     // Called when the owner or the renter wants to stop an active rent agreement.
-    function afterRentStopped(address from, uint256 tokenId) public onlyErc721Contract {
+    function afterRentStopped(address from, uint256 tokenId) public override onlyErc721Contract {
         require(rentStatus == RentStatus.active, "ERC721SingleRentAgreement: rent status has to be active");
         rentStatus = RentStatus.finished;
 
