@@ -445,12 +445,18 @@ contract('ERC721BundleRentAgreement', function (accounts) {
       );
 
       const renterBalance = await balance.current(renter);
-      const tx = await this.agreement.payAndCancelRent(this.token.address, tokenId, {
-        from: renter,
-      });
+      const tx = await this.agreement.payAndCancelRent(
+        this.token.address,
+        tokenId,
+        {
+          from: renter,
+        },
+      );
 
       expect(await balance.current(renter)).to.bignumber.above(
-        renterBalance.sub(new BN(tx.receipt.effectiveGasPrice).muln(tx.receipt.gasUsed)).toString(),
+        renterBalance
+          .sub(new BN(tx.receipt.effectiveGasPrice).muln(tx.receipt.gasUsed))
+          .toString(),
       );
     });
 
