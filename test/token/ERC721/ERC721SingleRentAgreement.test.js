@@ -55,14 +55,14 @@ contract('ERC721SingleRentAgreement', function (accounts) {
     it('Only erc721 contract can update state', async function () {
       await expectRevert(
         this.erc721SingleRentAgreement.afterRentAgreementReplaced(this.tokenId, { from: this.renter }),
-        'Only erc721Contract contract can modify rent agreement state',
+        'ERC721SingleRentAgreement: only erc721Contract contract can modify rent agreement state',
       );
     });
 
     it('Cannot start rent if rent not paid', async function () {
       await expectRevert(
         this.erc721.acceptRentAgreement(this.renter, this.tokenId, { from: this.renter }),
-        'Rent has to be paid first',
+        'ERC721SingleRentAgreement: rent has to be paid first',
       );
     });
 
@@ -70,7 +70,7 @@ contract('ERC721SingleRentAgreement', function (accounts) {
       // Pay rent with wrong fee amount.
       await expectRevert(
         this.erc721SingleRentAgreement.payRent({ from: this.renter, value: this.rentalFees + 1 }),
-        'Wrong rental fees amount',
+        'ERC721SingleRentAgreement: wrong rental fees amount',
       );
     });
 
@@ -95,7 +95,7 @@ contract('ERC721SingleRentAgreement', function (accounts) {
       await this.erc721SingleRentAgreement.payRent({ from: this.renter, value: this.rentalFees });
       await expectRevert(
         this.erc721SingleRentAgreement.afterRentAgreementReplaced(this.tokenId, { from: this.erc721Address }),
-        'Rent already paid',
+        'ERC721SingleRentAgreement: rent already paid',
       );
     });
 
@@ -105,7 +105,7 @@ contract('ERC721SingleRentAgreement', function (accounts) {
       // Pay rent.
       await expectRevert(
         this.erc721SingleRentAgreement.payRent({ from: this.renter, value: this.rentalFees }),
-        'rental agreement expired',
+        'ERC721SingleRentAgreement: rental agreement expired',
       );
     });
   });
@@ -122,7 +122,7 @@ contract('ERC721SingleRentAgreement', function (accounts) {
       await startRent(this.erc721SingleRentAgreement, this.renter, this.rentalFees, this.erc721, this.tokenId);
       await expectRevert(
         this.erc721.stopRentAgreement(this.tokenId, { from: this.owner }),
-        'Rental period not finished yet',
+        'ERC721SingleRentAgreement: rental period not finished yet',
       );
     });
 
