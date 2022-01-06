@@ -69,7 +69,7 @@ contract ERC721BundleRentAgreement is ERC165, IERC721RentAgreement {
     }
 
     function supportsInterface(bytes4 interfaceId) public view virtual override(ERC165, IERC165) returns (bool) {
-        return interfaceId == type(IERC721Rent).interfaceId || super.supportsInterface(interfaceId);
+        return interfaceId == type(IERC721RentAgreement).interfaceId || super.supportsInterface(interfaceId);
     }
 
     function payAndStartRent(
