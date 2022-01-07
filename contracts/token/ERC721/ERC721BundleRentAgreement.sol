@@ -11,7 +11,7 @@ import "../../utils/introspection/ERC165.sol";
 // renter must tell for how long and pay upfront the total cost. If either the owner of a
 // token (or their approvers) or the renter wants to cancel the rental before the planned
 // duration, they have to pay a cancelation fee.
-contract ERC721BundleRentAgreement is ERC165, IERC721RentAgreement {
+contract ERC721BundleRentAgreement is IERC721RentAgreement, ERC165 {
     struct TokenRental {
         uint40 startTimestamp;
         uint40 paidDurationInSecond;
