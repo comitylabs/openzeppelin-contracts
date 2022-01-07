@@ -233,9 +233,9 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Rent, IERC721Metadata {
         agreement.afterRentStopped(_msgSender(), tokenId);
     }
 
-    function isRented(uint256 tokenId) public view virtual override returns (bool) {
+    function rentedOwnerOf(uint256 tokenId) public view virtual override returns (address) {
         require(_exists(tokenId), "ERC721: nonexistent token");
-        return _rentedOwners[tokenId] != address(0);
+        return _rentedOwners[tokenId];
     }
 
     /**

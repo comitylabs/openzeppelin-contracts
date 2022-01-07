@@ -12,16 +12,16 @@ contract ERC721SwapRentAgreement is Context, IERC721RentAgreement, ERC165 {
 
     struct Token {
         IERC721Rent source;
-        uint256 tokenId;
         bool approvedForRent;
+        uint256 tokenId;
     }
 
     struct RentAgreement {
         Token token1;
         Token token2;
-        uint256 startTime;
-        uint32 rentDuration;
-        uint32 rentExpirationTime;
+        uint40 startTime;
+        uint40 rentDuration;
+        uint40 rentExpirationTime;
         RentStatus rentStatus;
     }
 
@@ -32,11 +32,13 @@ contract ERC721SwapRentAgreement is Context, IERC721RentAgreement, ERC165 {
         IERC721Rent _source2,
         uint256 _tokenId1,
         uint256 _tokenId2,
-        uint32 _rentDuration,
-        uint32 _rentExpirationTime
+        uint40 _rentDuration,
+        uint40 _rentExpirationTime
     ) {
-        Token memory token1 = Token(_source1, _tokenId1, false);
-        Token memory token2 = Token(_source2, _tokenId2, false);
+        Token memory token1 = Token(_source1, false, _tokenId1);
+        Token memory token2 = Token(_source2, false, _tokenId2);
+
+        //require owners differ
 
         rentAgreement = RentAgreement(token1, token2, 0, _rentDuration, _rentExpirationTime, RentStatus.pending);
     }
@@ -59,12 +61,15 @@ contract ERC721SwapRentAgreement is Context, IERC721RentAgreement, ERC165 {
     }
 
     function afterRentStarted(
-        address,
-        address forAddress,
+        IERC721Rent from,
         uint256 tokenId
     ) public override onlyErc721Contracts {
         // Before the expiration date.
         require(block.timestamp <= rentAgreement.rentExpirationTime, "ERC721SwapRentAgreement: rent expired");
+        require(
+            rentAgreement.rentStatus == RentStatus.pending,
+            "ERC721SwapRentAgreement: rent agreement already active"
+        );
 
         Token memory token1 = rentAgreement.token1;
         Token memory token2 = rentAgreement.token2;
@@ -76,30 +81,44 @@ contract ERC721SwapRentAgreement is Context, IERC721RentAgreement, ERC165 {
         );
 
         // Only tokens owner or approver can swap their token.
-        require(
-            (isOwnerOrApprover(token1.source, token1.tokenId, forAddress) ||
-                isOwnerOrApprover(token2.source, token2.tokenId, forAddress)),
-            "ERC721SwapRentAgreement: only tokens owner or approver can swap their token"
-        );
+        if (from == token1.source && tokenId == token1.tokenId) {
+            require(
+                _isOwnerOrApprover(
+                    token2.source,
+                    token2.tokenId,
+                    token2.source.rentedOwnerOf(token2.tokenId),
+                    token1.source.ownerOf(token1.tokenId)
+                ),
+                "ERC721SwapRentAgreement: only token owner or approver can swap their tokens"
+            );
+        } else {
+           require(_isOwnerOrApprover(
+                token1.source,
+                token1.tokenId,
+                token1.source.rentedOwnerOf(token1.tokenId),
+                token2.source.ownerOf(token2.tokenId)),
+               "ERC721SwapRentAgreement: only token owner or approver can swap their tokens" 
+           );
+        }
 
         // Tokens have to be aproved for rental by their owners or approvers.
         require(token1.approvedForRent, "ERC721SwapRentAgreement: token 1 not approved for rent");
         require(token2.approvedForRent, "ERC721SwapRentAgreement: token 2 not approved for rent");
 
-        rentAgreement.startTime = block.timestamp;
+        rentAgreement.startTime = uint40(block.timestamp);
         rentAgreement.rentStatus = RentStatus.active;
     }
 
-    function isOwnerOrApprover(
+    function _isOwnerOrApprover(
         IERC721Rent source,
         uint256 tokenId,
+        address owner,
         address target
-    ) public view returns (bool) {
-        address owner = source.ownerOf(tokenId);
+    ) internal view returns (bool) {
         return (target == owner || target == source.getApproved(tokenId) || source.isApprovedForAll(owner, target));
     }
 
-    function approveRent(IERC721Rent source, uint256 tokenId) public {
+    function approveRent(IERC721Rent source, uint256 tokenId) external {
         Token memory token1 = rentAgreement.token1;
         Token memory token2 = rentAgreement.token2;
 
@@ -115,7 +134,7 @@ contract ERC721SwapRentAgreement is Context, IERC721RentAgreement, ERC165 {
 
         // Only tokenId owner or approver can approve the rent.
         require(
-            isOwnerOrApprover(source, tokenId, _msgSender()),
+            _isOwnerOrApprover(source, tokenId, source.ownerOf(tokenId), _msgSender()),
             "ERC721SwapRentAgreement: only owner or approver can approve rent agreement"
         );
 

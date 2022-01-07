@@ -56,7 +56,10 @@ contract ERC721SingleRentAgreement is Context, IERC721RentAgreement, ERC165 {
 
     // ===== Modifiers ====== //
     modifier onlyErc721Contract() {
-        require(_msgSender() == erc721Contract, "ERC721SingleRentAgreement: only erc721Contract contract can modify rent agreement state");
+        require(
+            _msgSender() == erc721Contract,
+            "ERC721SingleRentAgreement: only erc721Contract contract can modify rent agreement state"
+        );
         _;
     }
 

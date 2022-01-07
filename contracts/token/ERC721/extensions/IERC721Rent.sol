@@ -23,7 +23,6 @@ interface IERC721RentAgreement is IERC165 {
      */
     function afterRentStarted(
         address from,
-        address forAddress,
         uint256 tokenId
     ) external;
 
@@ -79,7 +78,7 @@ interface IERC721Rent is IERC721 {
     function stopRentAgreement(uint256 tokenId) external;
 
     /**
-     * Returns true if the token is currently being rent by someone.
+     * If a token is rented, returns the true owner, otherwise returns address(0)
      */
-    function isRented(uint256 tokenId) external view returns (bool);
+    function rentedOwnerOf(uint256 tokenId) external returns (address);
 }
