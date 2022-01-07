@@ -69,7 +69,7 @@ contract('ERC721SwapRentalAgreement', function (accounts) {
     it('Only registered contracts can modify agreement', async function () {
       // Can't start rent agreement if not registered contract.
       await expectRevert(
-        this.nonRegisteredToken.acceptRentAgreement(this.owner1, this.tokenId2, {
+        this.nonRegisteredToken.acceptRentalAgreement(this.owner1, this.tokenId2, {
           from: this.owner2,
         }),
         'ERC721SwapRentalAgreement: only registered erc721 can change state',
