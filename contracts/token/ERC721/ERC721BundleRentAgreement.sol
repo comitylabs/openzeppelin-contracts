@@ -44,11 +44,7 @@ contract ERC721BundleRentAgreement is ERC165, IERC721RentAgreement {
     }
 
     // Called when an account accepts a renting contract and wants to start the location.
-    function afterRentStarted(
-        address from,
-        address,
-        uint256 tokenId
-    ) external view virtual override {
+    function afterRentStarted(address from, uint256 tokenId) external view virtual override {
         // Make sure it was called through `payAndStartRent` to make sure the fee was paid and the state set
         require(from == address(this));
         require(tokenRentals[IERC721Rent(msg.sender)][tokenId].startTimestamp == uint40(block.timestamp));
