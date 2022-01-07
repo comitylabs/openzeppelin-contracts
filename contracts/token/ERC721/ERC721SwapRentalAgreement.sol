@@ -92,7 +92,7 @@ contract ERC721SwapRentalAgreement is Context, IERC721RentAgreement, ERC165 {
         Token memory token1 = rentalAgreement.token1;
         Token memory token2 = rentalAgreement.token2;
 
-        // Tokens have to be aproved for rentalal by their owners or approvers.
+        // Tokens have to be aproved for rental by their owners or approvers.
         require(token1.approvedForRental, "ERC721SwapRentalAgreement: token 1 not approved for rental");
         require(token2.approvedForRental, "ERC721SwapRentalAgreement: token 2 not approved for rental");
 
