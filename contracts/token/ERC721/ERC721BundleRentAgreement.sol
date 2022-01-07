@@ -7,7 +7,7 @@ import "../../utils/introspection/ERC165.sol";
 
 // Allows to manage an arbitrary number of token rentals from an arbitrary number of holder
 // contracts with only one agreement contract. The contract defines a price per time to pay
-// to rent a token, whih can be defined globally and per token. When starting a rental, the
+// to rent a token, which can be defined globally and per token. When starting a rental, the
 // renter must tell for how long and pay upfront the total cost. If either the owner of a
 // token (or their approvers) or the renter wants to cancel the rental before the planned
 // duration, they have to pay a cancelation fee.

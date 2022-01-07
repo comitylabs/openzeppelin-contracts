@@ -213,7 +213,7 @@ contract('ERC721BundleRentAgreement', function (accounts) {
       ).to.bignumber.equal(defaultCancelationFee.toString());
     });
 
-    it('cannot be cancelled by soneone else', async function () {
+    it('cannot be cancelled by someone else', async function () {
       await expectRevert(
         this.agreement.payAndCancelRent(this.token.address, tokenId, {
           from: other,
@@ -291,7 +291,7 @@ contract('ERC721BundleRentAgreement', function (accounts) {
   });
 
   describe('changing costs', async function () {
-    it('can have the token specific cost changes', async function () {
+    it('can have the token specific costs changes', async function () {
       await this.agreement.setTokenPriceInWeiPerSecond(
         this.token.address,
         tokenId,
