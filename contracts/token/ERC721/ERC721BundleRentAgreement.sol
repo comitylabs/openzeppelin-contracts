@@ -34,7 +34,7 @@ contract ERC721BundleRentAgreement is ERC165, IERC721RentAgreement {
     }
 
     // Called when an owner of an NFT changes or removes its NTF renting contract.
-    function afterRentAgreementReplaced(uint256 tokenId) public view virtual override {
+    function afterRentAgreementReplaced(uint256 tokenId) external view virtual override {
         // We don't need to check if a rental is in progress because the IERC721Rent does that for us
         // We don't allow to change the contract if funds remain, because we don't store the owner
         require(
@@ -48,13 +48,13 @@ contract ERC721BundleRentAgreement is ERC165, IERC721RentAgreement {
         address from,
         address,
         uint256 tokenId
-    ) public view virtual override {
+    ) external view virtual override {
         // Make sure it was called through `payAndStartRent` to make sure the fee was paid and the state set
         require(from == address(this));
         require(tokenRentals[IERC721Rent(msg.sender)][tokenId].startTimestamp == uint40(block.timestamp));
     }
 
-    function afterRentStopped(address, uint256 tokenId) public virtual override {
+    function afterRentStopped(address, uint256 tokenId) external virtual override {
         TokenRental memory rental = tokenRentals[IERC721Rent(msg.sender)][tokenId];
         require(rental.startTimestamp != 0, "IERC721RentAgreement: token is not rented");
         require(_isRentalFinished(rental), "IERC721RentAgreement: rental is not finished");
@@ -76,7 +76,7 @@ contract ERC721BundleRentAgreement is ERC165, IERC721RentAgreement {
         IERC721Rent holder,
         uint256 tokenId,
         uint40 plannedRentDurationInSeconds
-    ) public payable {
+    ) external payable {
         require(plannedRentDurationInSeconds > 0, "IERC721RentAgreement: rental duration");
 
         TokenRental memory rental = tokenRentals[holder][tokenId];
@@ -101,7 +101,7 @@ contract ERC721BundleRentAgreement is ERC165, IERC721RentAgreement {
         holder.acceptRentAgreement(msg.sender, tokenId);
     }
 
-    function payAndCancelRent(IERC721Rent holder, uint256 tokenId) public payable {
+    function payAndCancelRent(IERC721Rent holder, uint256 tokenId) external payable {
         TokenRental memory rental = tokenRentals[holder][tokenId];
         require(rental.startTimestamp != 0, "IERC721RentAgreement: token is not rented");
         require(!_isRentalFinished(rental), "IERC721RentAgreement: token rental can be finished");
@@ -145,19 +145,19 @@ contract ERC721BundleRentAgreement is ERC165, IERC721RentAgreement {
     }
 
     // Provided for convenience, can just use `stopRentAgreement` directly
-    function finishRent(IERC721Rent holder, uint256 tokenId) public {
+    function finishRent(IERC721Rent holder, uint256 tokenId) external {
         holder.stopRentAgreement(tokenId);
     }
 
     // Negative value means refund
-    function cancelationFeesForRenter(IERC721Rent holder, uint256 tokenId) public view returns (int256) {
+    function cancelationFeesForRenter(IERC721Rent holder, uint256 tokenId) external view returns (int256) {
         TokenRental memory rental = tokenRentals[holder][tokenId];
         require(rental.startTimestamp != 0, "IERC721RentAgreement: token is not rented");
         require(!_isRentalFinished(rental), "IERC721RentAgreement: token rental can be finished");
         return _renterCancelationFees(rental);
     }
 
-    function cancelationFeesForOwner(IERC721Rent holder, uint256 tokenId) public view returns (uint80) {
+    function cancelationFeesForOwner(IERC721Rent holder, uint256 tokenId) external view returns (uint80) {
         TokenRental memory rental = tokenRentals[holder][tokenId];
         require(rental.startTimestamp != 0, "IERC721RentAgreement: token is not rented");
         require(!_isRentalFinished(rental), "IERC721RentAgreement: token rental can be finished");
@@ -168,7 +168,7 @@ contract ERC721BundleRentAgreement is ERC165, IERC721RentAgreement {
         IERC721Rent holder,
         uint256 tokenId,
         address payable recipient
-    ) public {
+    ) external {
         require(
             _isOwnerOrApproved(holder, tokenId, msg.sender),
             "IERC721RentAgreement: only owner or approved of token"
@@ -185,7 +185,7 @@ contract ERC721BundleRentAgreement is ERC165, IERC721RentAgreement {
         IERC721Rent holder,
         uint256 tokenId,
         uint80 priceInWeiPerSecond
-    ) public {
+    ) external {
         require(
             _isOwnerOrApproved(holder, tokenId, msg.sender),
             "IERC721RentAgreement: only owner or approved of token"
@@ -198,7 +198,7 @@ contract ERC721BundleRentAgreement is ERC165, IERC721RentAgreement {
         IERC721Rent holder,
         uint256 tokenId,
         uint80 cancelationFeeInWei
-    ) public {
+    ) external {
         require(
             _isOwnerOrApproved(holder, tokenId, msg.sender),
             "IERC721RentAgreement: only owner or approved of token"
