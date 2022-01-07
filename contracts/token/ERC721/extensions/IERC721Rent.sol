@@ -21,11 +21,7 @@ interface IERC721RentAgreement is IERC165 {
      *
      * May throw if the contract does not accept the rent.
      */
-    function afterRentStarted(
-        address from,
-        address forAddress,
-        uint256 tokenId
-    ) external;
+    function afterRentStarted(address from, uint256 tokenId) external;
 
     /**
      * Called when the owner or the renter wants to stop a started rent agreement.
