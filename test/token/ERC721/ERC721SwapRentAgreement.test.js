@@ -93,36 +93,26 @@ contract('ERC721SwapRentAgreement', function (accounts) {
     });
     it('approve rent', async function () {
       await this.erc721SwapRentAgreement.approveRent(this.token1.address, this.tokenId1, { from: this.owner1 });
-      await this.erc721SwapRentAgreement.approveRent(this.token2.address, this.tokenId2, { from: this.owner2 });
 
-      // Registered tokens have been cleared for approval.
+      // Token 1 have been cleared for approval.
       const rentAgreement = await this.erc721SwapRentAgreement.rentAgreement();
       expect(rentAgreement.token1.approvedForRent).to.equal(true);
-      expect(rentAgreement.token2.approvedForRent).to.equal(true);
-    });
 
-    it('cannot start rent if token not registered', async function () {
-      const newTokenId = new BN('5');
-      await this.token1.mint(this.owner1, newTokenId);
-      // Set a new rent agreement for a different token id in the token1 contract.
-      await this.token1.setRentAgreement(this.erc721SwapRentAgreement.address, newTokenId, { from: this.owner1 });
-      await expectRevert(
-        this.token1.acceptRentAgreement(this.owner2, newTokenId, { from: this.owner1 }),
-        'ERC721SwapRentAgreement: tokenId not part of rental agreement',
-      );
-    });
-    it('only owner or approver can start rent', async function () {
-      await expectRevert(
-        this.token1.acceptRentAgreement(this.otherAccount, this.tokenId1, { from: this.otherAccount }),
-        'ERC721SwapRentAgreement: only token owner or approver can swap their tokens',
+      expectRevert(
+        this.erc721SwapRentAgreement.startRent({ from: this.owner1 }),
+        'ERC721SwapRentAgreement: token 2 not approved for rent',
       );
     });
 
     it('start rent', async function () {
-      const o = await this.token2.rentedOwnerOf(this.tokenId2);
-      console.log(o);
-      await this.token1.acceptRentAgreement(this.owner2, this.tokenId1, { from: this.owner1 });
-      const rentAgreement = await this.erc721SwapRentAgreement.rentAgreement();
+      await this.erc721SwapRentAgreement.approveRent(this.token2.address, this.tokenId2, { from: this.owner2 });
+      // Registered tokens have been cleared for approval.
+      let rentAgreement = await this.erc721SwapRentAgreement.rentAgreement();
+      expect(rentAgreement.token2.approvedForRent).to.equal(true);
+
+      // Start rent.
+      await this.erc721SwapRentAgreement.startRent({ from: this.otherAccount });
+      rentAgreement = await this.erc721SwapRentAgreement.rentAgreement();
       expect(rentAgreement.rentStatus.toNumber()).to.equal(RENT_STATUS.ACTIVE);
     });
   });
@@ -130,14 +120,14 @@ contract('ERC721SwapRentAgreement', function (accounts) {
   context('Stop rent', async function () {
     it('Cannot finish rent before the rental period is over', async function () {
       await expectRevert(
-        this.token1.stopRentAgreement(this.tokenId1, { from: this.owner1 }),
+        this.erc721SwapRentAgreement.stopRental({ from: this.owner1 }),
         'ERC721SwapRentAgreement: rental period not finished yet',
       );
     });
 
     it('finish rent', async function () {
       await time.increase(1209600); // Increase Ganache time by 2 weeks.
-      await this.token1.stopRentAgreement(this.tokenId1, { from: this.owner1 });
+      await this.erc721SwapRentAgreement.stopRental({ from: this.owner1 });
       const rentAgreement = await this.erc721SwapRentAgreement.rentAgreement();
       expect(rentAgreement.rentStatus.toNumber()).to.equal(RENT_STATUS.PENDING);
       expect(rentAgreement.token1.approvedForRent).to.equal(false);
@@ -154,7 +144,7 @@ contract('ERC721SwapRentAgreement', function (accounts) {
       // Increase time.
       await time.increase(1814400); // Increase Ganache time by 3 weeks.
       await expectRevert(
-        this.token1.acceptRentAgreement(this.owner2, this.tokenId1, { from: this.owner1 }),
+        this.erc721SwapRentAgreement.startRent({ from: this.otherAccount }),
         'ERC721SwapRentAgreement: rent expired',
       );
     });

@@ -38,7 +38,10 @@ contract ERC721SwapRentAgreement is Context, IERC721RentAgreement, ERC165 {
         Token memory token1 = Token(_source1, false, _tokenId1);
         Token memory token2 = Token(_source2, false, _tokenId2);
 
-        //require owners differ
+        require(
+            _source1.ownerOf(_tokenId1) != _source2.ownerOf(_tokenId2),
+            "ERC721SwapRentAgreement: token 1 and token 2 have the same owner"
+        );
 
         rentAgreement = RentAgreement(token1, token2, 0, _rentDuration, _rentExpirationTime, RentStatus.pending);
     }
@@ -56,16 +59,14 @@ contract ERC721SwapRentAgreement is Context, IERC721RentAgreement, ERC165 {
     function afterRentAgreementReplaced(uint256) public view override onlyErc721Contracts {
         require(
             rentAgreement.rentStatus == RentStatus.pending,
-            "ERC721SwapRentAgreement: cannot replace active rent agreement"
+            "ERC721SwapRentAgreement: rent agreement already active"
         );
     }
 
-    function afterRentStarted(
-        IERC721Rent from,
-        uint256 tokenId
-    ) public override onlyErc721Contracts {
+    function startRent() public {
         // Before the expiration date.
         require(block.timestamp <= rentAgreement.rentExpirationTime, "ERC721SwapRentAgreement: rent expired");
+        // Rent agreement has to be pending.
         require(
             rentAgreement.rentStatus == RentStatus.pending,
             "ERC721SwapRentAgreement: rent agreement already active"
@@ -74,39 +75,21 @@ contract ERC721SwapRentAgreement is Context, IERC721RentAgreement, ERC165 {
         Token memory token1 = rentAgreement.token1;
         Token memory token2 = rentAgreement.token2;
 
-        // Registered tokenIds only.
-        require(
-            (tokenId == token1.tokenId || tokenId == token2.tokenId),
-            "ERC721SwapRentAgreement: tokenId not part of rental agreement"
-        );
-
-        // Only tokens owner or approver can swap their token.
-        if (from == token1.source && tokenId == token1.tokenId) {
-            require(
-                _isOwnerOrApprover(
-                    token2.source,
-                    token2.tokenId,
-                    token2.source.rentedOwnerOf(token2.tokenId),
-                    token1.source.ownerOf(token1.tokenId)
-                ),
-                "ERC721SwapRentAgreement: only token owner or approver can swap their tokens"
-            );
-        } else {
-           require(_isOwnerOrApprover(
-                token1.source,
-                token1.tokenId,
-                token1.source.rentedOwnerOf(token1.tokenId),
-                token2.source.ownerOf(token2.tokenId)),
-               "ERC721SwapRentAgreement: only token owner or approver can swap their tokens" 
-           );
-        }
-
         // Tokens have to be aproved for rental by their owners or approvers.
         require(token1.approvedForRent, "ERC721SwapRentAgreement: token 1 not approved for rent");
         require(token2.approvedForRent, "ERC721SwapRentAgreement: token 2 not approved for rent");
 
-        rentAgreement.startTime = uint40(block.timestamp);
+        // Start the rent.
         rentAgreement.rentStatus = RentStatus.active;
+        rentAgreement.startTime = uint40(block.timestamp);
+
+        // Swap the tokens.
+        token1.source.acceptRentAgreement(token2.source.ownerOf(token2.tokenId), token1.tokenId);
+        token2.source.acceptRentAgreement(token1.source.rentedOwnerOf(token1.tokenId), token2.tokenId);
+    }
+
+    function afterRentStarted(address from, uint256) public view override onlyErc721Contracts {
+        require(from == address(this));
     }
 
     function _isOwnerOrApprover(
@@ -148,7 +131,7 @@ contract ERC721SwapRentAgreement is Context, IERC721RentAgreement, ERC165 {
         }
     }
 
-    function afterRentStopped(address, uint256) public override onlyErc721Contracts {
+    function stopRental() public {
         require(rentAgreement.rentStatus == RentStatus.active, "ERC721SwapRentAgreement: can only stop active rent");
         require(
             block.timestamp >= rentAgreement.startTime + rentAgreement.rentDuration,
@@ -167,5 +150,13 @@ contract ERC721SwapRentAgreement is Context, IERC721RentAgreement, ERC165 {
         rentAgreement.token2 = token2;
         rentAgreement.startTime = 0;
         rentAgreement.rentStatus = RentStatus.pending;
+
+        // Swap back the tokens.
+        token1.source.stopRentAgreement(token1.tokenId);
+        token2.source.stopRentAgreement(token2.tokenId);
+    }
+
+    function afterRentStopped(address from, uint256) public view override onlyErc721Contracts {
+        require(address(this) == from);
     }
 }
