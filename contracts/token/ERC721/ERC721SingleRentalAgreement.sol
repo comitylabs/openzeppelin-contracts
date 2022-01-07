@@ -127,8 +127,8 @@ contract ERC721SingleRentalAgreement is Context, IERC721RentalAgreement, ERC165 
     }
 
     /// Enable the renter to do finish the rental.
-    /// If this is an early termination, the renter can be refunded 
-    /// proportionally to the rental time consumed. 
+    /// If this is an early termination, the renter can be refunded
+    /// proportionally to the rental time consumed.
     function _stopRentalRenter() private {
         // Early rental termination.
         if (block.timestamp <= startTime + rentalDuration) {
