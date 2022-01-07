@@ -4,6 +4,11 @@ import "../../utils/Context.sol";
 import "./extensions/IERC721Rent.sol";
 import "../../utils/introspection/ERC165.sol";
 
+/// @title An agreement to swap two ERC721 between their respective owners.
+/// @dev The tokens being swapped are specified during the contract construction.
+/// @notice The swap contract specifies the rental period and the rental expiration time in the constructor.
+/// After the expiration time, the contract is considered as invalid and cannot be started.
+/// Before it expires, it can be started, and restarted at any time.
 contract ERC721SwapRentalAgreement is Context, IERC721RentAgreement, ERC165 {
     enum RentalStatus {
         pending,
@@ -53,6 +58,7 @@ contract ERC721SwapRentalAgreement is Context, IERC721RentAgreement, ERC165 {
         );
     }
 
+    /// Only authorize calls from the two tokens involved in the swap.
     modifier onlyErc721Contracts() {
         Token memory token1 = rentalAgreement.token1;
         Token memory token2 = rentalAgreement.token2;
@@ -63,6 +69,7 @@ contract ERC721SwapRentalAgreement is Context, IERC721RentAgreement, ERC165 {
         _;
     }
 
+    /// @inheritdoc IERC721RentAgreement
     function afterRentAgreementReplaced(uint256) public view override onlyErc721Contracts {
         require(
             rentalAgreement.rentalStatus == RentalStatus.pending,
@@ -70,6 +77,9 @@ contract ERC721SwapRentalAgreement is Context, IERC721RentAgreement, ERC165 {
         );
     }
 
+    /// @notice starts the rental agreement and swap the two tokens between the two owners.
+    /// Any caller can start the token swap, if the two token owners have approved their token for rental.
+    /// A swap can be rented again and again until the swap agreement expires.
     function startRental() public {
         // Before the expiration date.
         require(block.timestamp <= rentalAgreement.rentalExpirationTime, "ERC721SwapRentalAgreement: rental expired");
@@ -95,10 +105,12 @@ contract ERC721SwapRentalAgreement is Context, IERC721RentAgreement, ERC165 {
         token2.source.acceptRentAgreement(token1.source.rentedOwnerOf(token1.tokenId), token2.tokenId);
     }
 
+    /// @inheritdoc IERC721RentAgreement
     function afterRentStarted(address from, uint256) public view override onlyErc721Contracts {
         require(from == address(this));
     }
 
+    /// @return bool: returns true if the target is the owner or approved or an operator.
     function _isOwnerOrApprover(
         IERC721Rent source,
         uint256 tokenId,
@@ -108,6 +120,7 @@ contract ERC721SwapRentalAgreement is Context, IERC721RentAgreement, ERC165 {
         return (target == owner || target == source.getApproved(tokenId) || source.isApprovedForAll(owner, target));
     }
 
+    /// @notice it aims to be called by the two token owners independently to approve their respective token for swap.
     function approveRental(IERC721Rent source, uint256 tokenId) external {
         Token memory token1 = rentalAgreement.token1;
         Token memory token2 = rentalAgreement.token2;
@@ -138,6 +151,9 @@ contract ERC721SwapRentalAgreement is Context, IERC721RentAgreement, ERC165 {
         }
     }
 
+    /// @notice Stops the swap agreement and transfers back the token to their original owners.
+    /// It reinitializes the rental agreement state so it can be started over if the agreement isn't expired.
+    /// This can be called by any caller, after the rental period is over.
     function stopRental() public {
         require(
             rentalAgreement.rentalStatus == RentalStatus.active,
@@ -166,6 +182,7 @@ contract ERC721SwapRentalAgreement is Context, IERC721RentAgreement, ERC165 {
         token2.source.stopRentAgreement(token2.tokenId);
     }
 
+    /// @inheritdoc IERC721RentAgreement
     function afterRentStopped(address from, uint256) public view override onlyErc721Contracts {
         require(address(this) == from);
     }
