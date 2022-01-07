@@ -43,7 +43,7 @@ contract('ERC721SingleRentalAgreement', function (accounts) {
     );
 
     // Set Rent agreement.
-    await this.erc721.setRentAgreement(this.erc721SingleRentalAgreement.address, this.tokenId, { from: this.owner });
+    await this.erc721.setRentalAgreement(this.erc721SingleRentalAgreement.address, this.tokenId, { from: this.owner });
   });
 
   context('Start Rent', async function () {
