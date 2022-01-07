@@ -219,7 +219,7 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Rent, IERC721Metadata {
 
         _rentedOwners[tokenId] = owner;
         _tranferKeepApprovals(owner, forAddress, tokenId);
-        agreement.afterRentStarted(_msgSender(), forAddress, tokenId);
+        agreement.afterRentStarted(_msgSender(), tokenId);
     }
 
     function stopRentAgreement(uint256 tokenId) public virtual override {
