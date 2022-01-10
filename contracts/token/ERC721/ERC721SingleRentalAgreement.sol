@@ -6,11 +6,11 @@ import "../../utils/introspection/ERC165.sol";
 
 /// @title ERC721 simple rental agreement.
 /// Define a simple rental agreement following the principles:
-///   - The rent is valid for a rental period. The rental period has to be over to finish the rental.
-///   - The rent has an exipration date: after this date it cannot be started.
+///   - The rental is valid for a fixed period. The rental period has to be over to finish the rental.
+///   - The rental has an expiration date: after this date it cannot be started.
 ///   - Anybody (except the owner) can pay & start the rent and becomes the renter.
-///   - The rent can be started only once.
-///   - The rent have to be paid by the renter to the original owner.
+///   - The rental can be started only once.
+///   - The rent has to be paid by the renter to the original owner.
 ///   - The contract exposes a function redeemFunds for the original owner to redeem the funds.
 contract ERC721SingleRentalAgreement is Context, IERC721RentalAgreement, ERC165 {
     enum RentalStatus {
@@ -51,8 +51,9 @@ contract ERC721SingleRentalAgreement is Context, IERC721RentalAgreement, ERC165 
         uint256 _rentalFees
     ) {
         // Original owner.
-        if (_erc721Contract.rentedOwnerOf(_tokenId) != address(0)) {
-            owner = _erc721Contract.rentedOwnerOf(_tokenId);
+        address rentedOwnerOf = _erc721Contract.rentedOwnerOf(_tokenId);
+        if (rentedOwnerOf != address(0)) {
+            owner = rentedOwnerOf;
         } else {
             owner = _erc721Contract.ownerOf(_tokenId);
         }
@@ -107,7 +108,8 @@ contract ERC721SingleRentalAgreement is Context, IERC721RentalAgreement, ERC165 
     }
 
     /// @inheritdoc IERC721RentalAgreement
-    function afterRentalStopped(address from, uint256) public override onlyErc721Contract {
+    function afterRentalStopped(address from, uint256 tknId) public override onlyErc721Contract {
+        require(tknId == tokenId, "ERC721SingleRentalAgreement: invalid token id");
         require(rentalStatus == RentalStatus.active, "ERC721SingleRentalAgreement: rental status has to be active");
         require(
             block.timestamp >= startTime + rentalDuration,

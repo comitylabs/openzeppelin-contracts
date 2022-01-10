@@ -116,6 +116,15 @@ contract('ERC721SingleRentalAgreement', function (accounts) {
         'ERC721SingleRentalAgreement: rental period not finished yet',
       );
     });
+    it('Cannot stop rent for a different token Id', async function () {
+      await startRent(this.erc721SingleRentalAgreement, this.renter, this.rentalFees, this.erc721, this.tokenId);
+      await expectRevert(
+        this.erc721SingleRentalAgreement.afterRentalStopped.call(this.owner, this.tokenId + 1, {
+          from: this.erc721.address,
+        }),
+        'ERC721SingleRentalAgreement: invalid token id',
+      );
+    });
     it('Only owner, approver, operator or renter can finish rent', async function () {
       await startRent(this.erc721SingleRentalAgreement, this.renter, this.rentalFees, this.erc721, this.tokenId);
       await time.increase(1809600); // Increase Ganache time by 2 weeks.
@@ -133,12 +142,18 @@ contract('ERC721SingleRentalAgreement', function (accounts) {
       await this.erc721.stopRentalAgreement(this.tokenId, { from: this.owner });
 
       // Only owner can redeem the funds.
-      await expectRevert(this.erc721SingleRentalAgreement.redeemFunds(this.rentalFees, { from: this.renter }),
-        'ERC721SingleRentalAgreement: only owner can redeem funds');
-      await expectRevert(this.erc721SingleRentalAgreement.redeemFunds(this.rentalFees, { from: this.otherAccount }),
-        'ERC721SingleRentalAgreement: only owner can redeem funds');
-      await expectRevert(this.erc721SingleRentalAgreement.redeemFunds(this.rentalFees + 1, { from: this.owner }),
-        'ERC721SingleRentalAgreement: not enough funds to redeem');
+      await expectRevert(
+        this.erc721SingleRentalAgreement.redeemFunds(this.rentalFees, { from: this.renter }),
+        'ERC721SingleRentalAgreement: only owner can redeem funds',
+      );
+      await expectRevert(
+        this.erc721SingleRentalAgreement.redeemFunds(this.rentalFees, { from: this.otherAccount }),
+        'ERC721SingleRentalAgreement: only owner can redeem funds',
+      );
+      await expectRevert(
+        this.erc721SingleRentalAgreement.redeemFunds(this.rentalFees + 1, { from: this.owner }),
+        'ERC721SingleRentalAgreement: not enough funds to redeem',
+      );
 
       await this.erc721SingleRentalAgreement.redeemFunds(this.rentalFees, { from: this.owner });
     });
