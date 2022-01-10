@@ -8,6 +8,7 @@ import "../../utils/introspection/ERC165.sol";
 /// Define a simple rental agreement following the principles:
 ///   - The rent is valid for a rental period. The rental period has to be over to finish the rental.
 ///   - The rent has an exipration date: after this date it cannot be started.
+///   - Anybody (except the owner) can pay & start the rent and becomes the renter.
 ///   - The rent can be started only once.
 ///   - The rent have to be paid by the renter to the original owner.
 ///   - The contract exposes a function redeemFunds for the original owner to redeem the funds.
