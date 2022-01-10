@@ -127,5 +127,20 @@ contract('ERC721SingleRentalAgreement', function (accounts) {
       const status = await this.erc721SingleRentalAgreement.rentalStatus();
       expect(status.toNumber()).to.equal(RENT_STATUS.FINISHED);
     });
+    it('Redeem funds', async function () {
+      await startRent(this.erc721SingleRentalAgreement, this.renter, this.rentalFees, this.erc721, this.tokenId);
+      await time.increase(1809600); // Increase Ganache time by 2 weeks.
+      await this.erc721.stopRentalAgreement(this.tokenId, { from: this.owner });
+
+      // Only owner can redeem the funds.
+      await expectRevert(this.erc721SingleRentalAgreement.redeemFunds(this.rentalFees, { from: this.renter }),
+        'ERC721SingleRentalAgreement: only owner can redeem funds');
+      await expectRevert(this.erc721SingleRentalAgreement.redeemFunds(this.rentalFees, { from: this.otherAccount }),
+        'ERC721SingleRentalAgreement: only owner can redeem funds');
+      await expectRevert(this.erc721SingleRentalAgreement.redeemFunds(this.rentalFees + 1, { from: this.owner }),
+        'ERC721SingleRentalAgreement: not enough funds to redeem');
+
+      await this.erc721SingleRentalAgreement.redeemFunds(this.rentalFees, { from: this.owner });
+    });
   });
 });
