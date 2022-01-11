@@ -11,7 +11,7 @@ import "../../utils/introspection/ERC165.sol";
 ///   - Anybody (except the owner) can pay & start the rent and becomes the renter.
 ///   - The rental can be started only once.
 ///   - The rent has to be paid by the renter to the original owner.
-///   - The contract exposes a function redeemFunds for the original owner to redeem the funds.
+///   - The contract exposes a function redeemFunds for the original owner and the renter to redeem their funds.
 contract ERC721SingleRentalAgreement is Context, IERC721RentalAgreement, ERC165 {
     enum RentalStatus {
         pending,
@@ -24,11 +24,13 @@ contract ERC721SingleRentalAgreement is Context, IERC721RentalAgreement, ERC165 
     IERC721Rental public erc721Contract;
     uint256 public tokenId;
     uint256 public rentalFees;
-    uint256 public ownerBalance;
     uint40 public rentalDuration;
     uint40 public expirationDate;
     uint40 public startTime;
     RentalStatus public rentalStatus;
+
+    // Mapping owners address to balances;
+    mapping(address => uint256) public balances;
 
     // ====== Events ====== //.
     event RentalStatusChanged(
@@ -91,15 +93,17 @@ contract ERC721SingleRentalAgreement is Context, IERC721RentalAgreement, ERC165 
     function payAndStartRent() public payable {
         require(rentalStatus == RentalStatus.pending, "ERC721SingleRentalAgreement: rental status has to be pending");
         require(block.timestamp <= expirationDate, "ERC721SingleRentalAgreement: rental agreement expired");
-        require(msg.value == rentalFees, "ERC721SingleRentalAgreement: wrong rental fees amount");
+        require(msg.value >= rentalFees, "ERC721SingleRentalAgreement: rental fees amount too low");
 
         // Start rental.
         rentalStatus = RentalStatus.active;
-        ownerBalance += msg.value;
+        renter = _msgSender();
+        balances[owner] += rentalFees;
+        // Hold the exceeded funds so it can be redeem later by the renter.
+        balances[renter] = msg.value - rentalFees;
         startTime = uint40(block.timestamp);
 
         // Accept rental agreement between owner and msg sender.
-        renter = _msgSender();
         erc721Contract.acceptRentalAgreement(renter, tokenId);
 
         // Emit event.
@@ -134,19 +138,24 @@ contract ERC721SingleRentalAgreement is Context, IERC721RentalAgreement, ERC165 
 
     /// Enable renter and owner to redeem their balances.
     function redeemFunds(uint256 _value) public {
-        require(_msgSender() == owner, "ERC721SingleRentalAgreement: only owner can redeem funds");
-        require(
-            rentalStatus == RentalStatus.finished,
-            "ERC721SingleRentalAgreement: rental has to be finished to redeem funds"
-        );
-        require(_value <= ownerBalance, "ERC721SingleRentalAgreement: not enough funds to redeem");
-        ownerBalance -= _value;
+        require(_value <= balances[_msgSender()], "ERC721SingleRentalAgreement: not enough funds to redeem");
+
+        // Owner can redeem funds once the rental agreement is finished.
+        // Renter can redeem their exceeded balance anytime in case of he overpaid the rent.
+        if (_msgSender() == owner) {
+            require(
+                rentalStatus == RentalStatus.finished,
+                "ERC721SingleRentalAgreement: rental has to be finished to redeem funds"
+            );
+        }
+
+        balances[_msgSender()] -= _value;
 
         // Check if the transfer is successful.
         require(_attemptETHTransfer(_msgSender(), _value), "ERC721SingleRentalAgreement: ETH transfer failed");
 
         // Emit an event.
-        emit FundsRedeemed(_msgSender(), _value, ownerBalance);
+        emit FundsRedeemed(_msgSender(), _value, balances[_msgSender()]);
     }
 
     function _attemptETHTransfer(address _to, uint256 _value) internal returns (bool) {
