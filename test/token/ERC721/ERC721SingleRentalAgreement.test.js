@@ -53,7 +53,7 @@ contract('ERC721SingleRentalAgreement', function (accounts) {
 
     it('Only erc721 contract can update state', async function () {
       await expectRevert(
-        this.erc721SingleRentalAgreement.afterRentalAgreementReplaced(this.tokenId, { from: this.renter }),
+        this.erc721SingleRentalAgreement.afterAgreementRemoved(this.tokenId, { from: this.renter }),
         'ERC721SingleRentalAgreement: only erc721Contract contract can modify rental agreement state',
       );
     });
