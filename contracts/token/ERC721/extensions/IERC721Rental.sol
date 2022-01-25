@@ -9,13 +9,13 @@ import "../../../utils/introspection/IERC165.sol";
 /// Defines the interface that a rental agreement contract should support to be used by
 /// `IERC721Rental`.
 interface IERC721RentalAgreement is IERC165 {
-    /// Function called at the end of `IERC721Rental.setRentalAgreement` when an agreement
-    /// is being unlinked from a token.
+    /// Function called at the end of `IERC721Rental.setRentalAgreement` on the agreement
+    /// currently set for the token, if one exists.
     ///
     /// @dev Allows the agreement to cancel the change by reverting if it deems it
     /// necessary. The `IERC721Rental` is calling this function, so all information needed
-    /// can be queried through the `msg.sender`. This event is only called if a rental is
-    /// not in progress, otherwise the `IERC721Rental` does not allow an agreement change.
+    /// can be queried through the `msg.sender`. This event is only called when the token
+    /// is not rented, as it is not allowed to change an agreement during a rental.
     function afterAgreementRemoved(uint256 tokenId) external;
 
     /// Function called at the end of `IERC721Rental.acceptRentalAgreement`.
