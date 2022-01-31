@@ -198,6 +198,10 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Rental, IERC721Metadata {
     function setRentalAgreement(IERC721RentalAgreement agreement, uint256 tokenId) external virtual override {
         require(_rentedOwners[tokenId] == address(0), "ERC721: token is rented");
         require(_isApprovedOrOwner(_msgSender(), tokenId), "ERC721: caller is not owner nor approved");
+        require(
+            agreement.supportsInterface(type(IERC721RentalAgreement).interfaceId),
+            "IERC721Rental: contract does not support rental agreement interface"
+        );
 
         IERC721RentalAgreement currentAgreement = _rentalAgreements[tokenId];
         _rentalAgreements[tokenId] = agreement;
