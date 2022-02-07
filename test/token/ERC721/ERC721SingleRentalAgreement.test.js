@@ -24,6 +24,7 @@ contract('ERC721SingleRentalAgreement', function (accounts) {
 
     // Accounts.
     [this.owner, this.renter, this.otherAccount] = accounts;
+    
 
     // Erc721 contracts
     this.name = 'Non Fungible Token';
