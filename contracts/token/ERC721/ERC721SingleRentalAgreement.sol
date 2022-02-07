@@ -48,8 +48,8 @@ contract ERC721SingleRentalAgreement is Context, IERC721RentalAgreement, ERC165 
     constructor(
         IERC721Rental _erc721Contract,
         uint256 _tokenId,
-        uint40 _duration,
-        uint40 _expirationDate,
+        uint32 _duration,
+        uint32 _expirationDate,
         uint256 _rentalFees
     ) {
         // Original owner.
@@ -101,7 +101,7 @@ contract ERC721SingleRentalAgreement is Context, IERC721RentalAgreement, ERC165 
         balances[owner] += rentalFees;
         // Hold the exceeded funds so it can be redeem later by the renter.
         balances[renter] = msg.value - rentalFees;
-        startTime = uint40(block.timestamp);
+        startTime = uint32(block.timestamp);
 
         // Accept rental agreement between owner and msg sender.
         erc721Contract.acceptRentalAgreement(renter, tokenId);
@@ -170,7 +170,7 @@ contract ERC721SingleRentalAgreement is Context, IERC721RentalAgreement, ERC165 
         return interfaceId == type(IERC721RentalAgreement).interfaceId || super.supportsInterface(interfaceId);
     }
 
-     // ===== Getter functions ===== //
+    // ===== Getter functions ===== //
     // For cost optimization, these functions could be removed and storage variables can be stored such
     // that they are easily accessible from storage reads.
     function getRentalDuration() public view returns (uint32) {
