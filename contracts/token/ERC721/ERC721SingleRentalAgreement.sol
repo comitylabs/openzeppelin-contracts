@@ -169,39 +169,4 @@ contract ERC721SingleRentalAgreement is Context, IERC721RentalAgreement, ERC165 
     function supportsInterface(bytes4 interfaceId) public view override(ERC165, IERC165) returns (bool) {
         return interfaceId == type(IERC721RentalAgreement).interfaceId || super.supportsInterface(interfaceId);
     }
-
-    // ===== Getter functions ===== //
-    // For cost optimization, these functions could be removed and storage variables can be stored such
-    // that they are easily accessible from storage reads.
-    function getRentalDuration() public view returns (uint32) {
-        return rentalDuration;
-    }
-
-    function getStartTime() public view returns (uint32) {
-        return startTime;
-    }
-
-    function getExpirationDate() public view returns (uint32) {
-        return expirationDate;
-    }
-
-    function getRentalStatus() public view returns (RentalStatus) {
-        return rentalStatus;
-    }
-
-    function getRentalFees() public view returns (uint256) {
-        return rentalFees;
-    }
-
-    function getRenter() public view returns (address) {
-        return renter;
-    }
-
-    function getOwner() public view returns (address) {
-        return owner;
-    }
-
-    function getToken() public view returns (address, uint256) {
-        return (address(erc721Contract), tokenId);
-    }
 }
