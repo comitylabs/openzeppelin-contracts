@@ -21,13 +21,13 @@ contract ERC721SingleRentalAgreement is Context, IERC721RentalAgreement, ERC165 
 
     address public owner;
     address public renter;
+    uint32 public rentalDuration;
+    uint32 public expirationDate;
+    uint32 public startTime;
     IERC721Rental public erc721Contract;
+    RentalStatus public rentalStatus;
     uint256 public tokenId;
     uint256 public rentalFees;
-    uint40 public rentalDuration;
-    uint40 public expirationDate;
-    uint40 public startTime;
-    RentalStatus public rentalStatus;
 
     // Mapping owners address to balances;
     mapping(address => uint256) public balances;
@@ -48,8 +48,8 @@ contract ERC721SingleRentalAgreement is Context, IERC721RentalAgreement, ERC165 
     constructor(
         IERC721Rental _erc721Contract,
         uint256 _tokenId,
-        uint40 _duration,
-        uint40 _expirationDate,
+        uint32 _duration,
+        uint32 _expirationDate,
         uint256 _rentalFees
     ) {
         // Original owner.
@@ -101,7 +101,7 @@ contract ERC721SingleRentalAgreement is Context, IERC721RentalAgreement, ERC165 
         balances[owner] += rentalFees;
         // Hold the exceeded funds so it can be redeem later by the renter.
         balances[renter] = msg.value - rentalFees;
-        startTime = uint40(block.timestamp);
+        startTime = uint32(block.timestamp);
 
         // Accept rental agreement between owner and msg sender.
         erc721Contract.acceptRentalAgreement(renter, tokenId);
