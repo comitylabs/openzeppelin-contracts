@@ -50,14 +50,14 @@ contract ERC721Roles is ERC721, IERC721Roles {
     function addRole(address forAddress, uint256 tokenId, bytes4 roleId) external {
         _tokenIdRegisteredRoles[tokenId][forAddress][roleId] = true;
         // Callback to the roles management contract.
-        _rolesManagement.afterRoleAdded(forAddress, tokenId, roleId);
+        _rolesManagement.afterRoleAdded(msg.sender, forAddress, tokenId, roleId);
     }
 
     /// @inheritdoc IERC721Roles
     function revokeRole(address forAddress, uint256 tokenId, bytes4 roleId) external {
         _tokenIdRegisteredRoles[tokenId][forAddress][roleId] = false;
         // Callback to the roles management contract.
-        _rolesManagement.afterRoleRevoked(forAddress, tokenId, roleId);
+        _rolesManagement.afterRoleRevoked(msg.sender, forAddress, tokenId, roleId);
     }
 
     /// @dev See {IERC165-supportsInterface}.

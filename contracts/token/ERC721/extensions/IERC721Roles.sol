@@ -23,9 +23,9 @@ interface IERC721RolesManagement is IERC165 {
     /// 
     /// @dev Allows the roles management to cancel role withdrawal by reverting if it deems it
     /// necessary. The `IERC721Roles` is calling this function, so all information needed
-    /// can be queried through the `msg.sender`. This event is not called if a rental is
-    /// not in progress.
-    function afterRoleRevoked(address forAddress, uint256 tokenId, bytes4 roleId) external;
+    /// can be queried through the `msg.sender`.
+    /// @param fromAddress The address that called `IERC721Roles.revokeRole`
+    function afterRoleRevoked(address fromAddress, address forAddress, uint256 tokenId, bytes4 roleId) external;
 
     /// Function called at the end of `IERC721Roles.addRole`.
     ///
@@ -33,8 +33,8 @@ interface IERC721RolesManagement is IERC165 {
     /// necessary. The `IERC721Roles` is calling this function, so all information needed
     /// can be queried through the `msg.sender`.
     ///
-    /// @param forAddress The address that called `IERC721Roles.addRole`
-    function afterRoleAdded(address forAddress, uint256 tokenId, bytes4 roleId) external;
+    /// @param fromAddress The address that called `IERC721Roles.addRole`
+    function afterRoleAdded(address fromAddress, address forAddress, uint256 tokenId, bytes4 roleId) external;
 }
 
 /// @title ERC721 token roles interface
@@ -49,7 +49,7 @@ interface IERC721RolesManagement is IERC165 {
 /// if authorized by the currently set RoleManagement contract.
 ///
 /// A role is defined similarly to functions' methodId by the first 4 bytes of its hash.
-/// For example, the renter role will be defined by bytes4(sha3("renter"))
+/// For example, the renter role will be defined by bytes4(keccak256("renter"))
 
 interface IERC721Roles is IERC721 {
     /// Set the role management contract.
