@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 import "../ERC721.sol";
 import "./IERC721Roles.sol";
 
-contract ERC721Roles is ERC721, IERC721Roles {
+abstract contract ERC721Roles is ERC721, IERC721Roles {
     // Mapping from token ID to roles management contract
     mapping(uint256 => IERC721RolesManager) private _rolesManager;
 
@@ -42,7 +42,7 @@ contract ERC721Roles is ERC721, IERC721Roles {
     }
 
     /// @inheritdoc IERC721Roles
-    function addRole(
+    function grantRole(
         address forAddress,
         uint256 tokenId,
         bytes4 roleId
@@ -54,7 +54,7 @@ contract ERC721Roles is ERC721, IERC721Roles {
         _tokenIdRegisteredRoles[tokenId][forAddress][roleId] = true;
 
         // Callback to the roles manager contract
-        manager.afterRoleAdded(_msgSender(), forAddress, tokenId, roleId);
+        manager.afterRoleGranted(_msgSender(), forAddress, tokenId, roleId);
     }
 
     /// @inheritdoc IERC721Roles

@@ -113,7 +113,7 @@ contract ERC721RolesRentalAgreement is Context, IERC721RolesManager, ERC165 {
         rentalAgreement.startTime = uint32(block.timestamp);
 
         // Reflect the role in the ERC721 token
-        erc721Contract.addRole(forAddress, tokenId, renterRoleId);
+        erc721Contract.grantRole(forAddress, tokenId, renterRoleId);
     }
 
     // stopRental stops the rental
@@ -132,8 +132,8 @@ contract ERC721RolesRentalAgreement is Context, IERC721RolesManager, ERC165 {
         erc721Contract.revokeRole(forAddress, tokenId, renterRoleId);
     }
 
-    // afterRoleAdded will be called back in `erc721Contract.addRole`
-    function afterRoleAdded(
+    // afterRoleGranted will be called back in `erc721Contract.grantRole`
+    function afterRoleGranted(
         address fromAddress,
         address,
         uint256,

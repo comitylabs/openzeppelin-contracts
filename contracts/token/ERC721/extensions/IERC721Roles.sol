@@ -30,14 +30,14 @@ interface IERC721RolesManager is IERC165 {
         bytes4 roleId
     ) external;
 
-    /// Function called at the end of `IERC721Roles.addRole`.
+    /// Function called at the end of `IERC721Roles.grantRole`.
     ///
     /// @dev Allows the roles manager to prevent adding a new role if it deems it
     /// necessary. The `IERC721Roles` is calling this function, so all information needed
     /// can be queried through the `msg.sender`.
     ///
-    /// @param fromAddress The address that called `IERC721Roles.addRole`
-    function afterRoleAdded(
+    /// @param fromAddress The address that called `IERC721Roles.grantRole`
+    function afterRoleGranted(
         address fromAddress,
         address forAddress,
         uint256 tokenId,
@@ -86,8 +86,8 @@ interface IERC721Roles is IERC721 {
     /// The token must have a roles manager contract set.
     /// The roles manager contract must accept the new role for the address
     ///
-    /// @dev Calls `IERC721RolesManager.afterRoleAdded` at the end of the call.
-    function addRole(
+    /// @dev Calls `IERC721RolesManager.afterRoleGranted` at the end of the call.
+    function grantRole(
         address forAddress,
         uint256 tokenId,
         bytes4 roleId
