@@ -4,29 +4,38 @@ import "../../utils/Context.sol";
 import "./extensions/IERC721Roles.sol";
 import "../../utils/introspection/ERC165.sol";
 
-contract ERC721RolesRentalAgreement is Context, IERC721RolesManagement, ERC165 {
+contract ERC721RolesRentalAgreement is Context, IERC721RolesManager, ERC165 {
+    // The status of the rent
     enum RentalStatus {
         pending,
         active,
         finished
     }
 
+    // A representation of rental agreement terms
     struct RentalAgreement {
+        // The duration of the rent, in seconds
         uint32 rentalDuration;
+        // The timestamp after which the rental agreement has expired and is no longer valid
         uint32 expirationDate;
+        // The timestamp corresponding to the start of the rental period
         uint32 startTime;
+        // The fees in wei that a renter needs to pay to start the rent
         uint256 rentalFees;
         RentalStatus rentalStatus;
     }
 
+    // The ERC721Roles token for which this contract can be used as a roles manager
     IERC721Roles public erc721Contract;
-    mapping(uint256 => RentalAgreement) public tokenIdToRentalAgreement;
-    uint256[] public tokenRented;
 
-    // Mapping owners address to balances;
+    // Mapping from tokenId to rental agreement
+    mapping(uint256 => RentalAgreement) public tokenIdToRentalAgreement;
+
+    // Mapping addresses to balances
     mapping(address => uint256) public balances;
 
-    bytes4 public renterRoleId = bytes4(keccak256("ERC721Role::Renter"));
+    // The identifier of the role Renter
+    bytes4 public renterRoleId = bytes4(keccak256("ERC721Roles::Renter"));
 
     constructor(IERC721Roles _erc721Contract) {
         erc721Contract = _erc721Contract;
@@ -41,15 +50,15 @@ contract ERC721RolesRentalAgreement is Context, IERC721RolesManagement, ERC165 {
         _;
     }
 
-    function afterRolesManagementRemoved() external onlyErc721Contract {
-        // The roles management contract can be updated only if all rentals are finished.
-        for (uint256 i = 0; i < tokenRented.length; i++) {
-            RentalStatus rentalStatus = tokenIdToRentalAgreement[tokenRented[i]].rentalStatus;
-            require(rentalStatus == RentalStatus.finished, "ERC721RolesRentalAgreement: rental is still active");
-        }
+    function afterRolesManagerRemoved(uint256 tokenId) external view onlyErc721Contract {
+        RentalAgreement memory agreement = tokenIdToRentalAgreement[tokenId];
+        require(
+            agreement.rentalStatus != RentalStatus.active,
+            "ERC721RolesRentalAgreement: can't remove the roles manager contract if there is an active rental"
+        );
     }
 
-    // Allow the token holder or operator to set up a new rental agreement.
+    // Allow the token's owner or operator to set up a new rental agreement.
     function setRentalAgreement(
         uint256 tokenId,
         uint32 duration,
@@ -61,27 +70,32 @@ contract ERC721RolesRentalAgreement is Context, IERC721RolesManagement, ERC165 {
             "ERC721RolesRentalAgreement: only owner or approver can set up a rental agreement"
         );
 
-        RentalAgreement existing_agreement = tokenIdToRentalAgreement[token_id];
+        RentalAgreement memory currentAgreement = tokenIdToRentalAgreement[tokenId];
         require(
-            existing_agreement.rentalStatus != RentalStatus.active,
+            currentAgreement.rentalStatus != RentalStatus.active,
             "ERC721RolesRentalAgreement: can't update rental agreement if there is an active one already"
         );
 
-        RentalAgreement rentalAgreement = RentalAgreement(
+        RentalAgreement memory rentalAgreement = RentalAgreement(
             duration,
             expirationDate,
-            uint32(block.timestamp),
+            0,
             fees,
             RentalStatus.pending
         );
-        tokenIdToRentalAgreement[token_id] = rentalAgreement;
+        // Set the rental agreement
+        tokenIdToRentalAgreement[tokenId] = rentalAgreement;
     }
 
+    // startRental allows an address to start the rent by paying the fees
     function startRental(address forAddress, uint256 tokenId) public payable {
-        RentalAgreement rentalAgreement = tokenIdToRentalAgreement[token_id];
-        require(now <= rentalAgreement.expirationDate, "ERC721RolesRentalAgreement: rental agreement expired");
+        RentalAgreement memory rentalAgreement = tokenIdToRentalAgreement[tokenId];
         require(
-            rentalAgreement.rentalStatus != rentalStatus.active,
+            block.timestamp <= rentalAgreement.expirationDate,
+            "ERC721RolesRentalAgreement: rental agreement expired"
+        );
+        require(
+            rentalAgreement.rentalStatus != RentalStatus.active,
             "ERC721RolesRentalAgreement: rental already in progress"
         );
 
@@ -89,52 +103,52 @@ contract ERC721RolesRentalAgreement is Context, IERC721RolesManagement, ERC165 {
         require(msg.value >= rentalFees, "ERC721RolesRentalAgreement: value below the rental fees");
 
         address owner = erc721Contract.ownerOf(tokenId);
-        // Credit the fees to the owner's balance.
+        // Credit the fees to the owner's balance
         balances[owner] += rentalFees;
-        // Credit the remaining value to the sender's balance.
+        // Credit the remaining value to the sender's balance
         balances[_msgSender()] += msg.value - rentalFees;
 
         // Start the rental
         rentalAgreement.rentalStatus = RentalStatus.active;
-        rentalAgreement.startTime = now;
+        rentalAgreement.startTime = uint32(block.timestamp);
 
-        // Mark the token as rented.
-        tokenRented.push(tokenId);
-
-        // Reflect the role in the ERC721 token.
+        // Reflect the role in the ERC721 token
         erc721Contract.addRole(forAddress, tokenId, renterRoleId);
     }
 
+    // stopRental stops the rental
     function stopRental(address forAddress, uint256 tokenId) public {
-        RentalAgreement rentalAgreement = tokenIdToRentalAgreement[token_id];
-        require(rentalAgreement.rentalStatus == rentalStatus.active, "ERC721RolesRentalAgreement: rental not active");
+        RentalAgreement memory rentalAgreement = tokenIdToRentalAgreement[tokenId];
+        require(rentalAgreement.rentalStatus == RentalStatus.active, "ERC721RolesRentalAgreement: rental not active");
         require(
-            now - rentalAgreement.startTime >= rentalAgreement.rentalDuration,
+            block.timestamp - rentalAgreement.startTime >= rentalAgreement.rentalDuration,
             "ERC721RolesRentalAgreement: rental still ongoing"
         );
 
         // Stop the rental
-        rentalAgreement.rentalStatus = finished;
+        rentalAgreement.rentalStatus = RentalStatus.finished;
 
-        // Revoke the renter role
+        // Revoke the renter's role
         erc721Contract.revokeRole(forAddress, tokenId, renterRoleId);
     }
 
+    // afterRoleAdded will be called back in `erc721Contract.addRole`
     function afterRoleAdded(
         address fromAddress,
-        address forAddress,
-        uint256 tokenId,
-        bytes4 roleId
-    ) external onlyErc721Contract {
+        address,
+        uint256,
+        bytes4
+    ) external view onlyErc721Contract {
         require(fromAddress == address(this), "ERC721RolesRentalAgreement: only this contract can set up renter roles");
     }
 
+    // afterRoleRevoked will be called back in `erc721Contract.revokeRole`
     function afterRoleRevoked(
         address fromAddress,
-        address forAddress,
-        uint256 tokenId,
-        bytes4 roleId
-    ) external onlyErc721Contract {
+        address,
+        uint256,
+        bytes4
+    ) external view onlyErc721Contract {
         require(fromAddress == address(this), "ERC721RolesRentalAgreement: only this contract can revoke renter roles");
     }
 
@@ -146,6 +160,7 @@ contract ERC721RolesRentalAgreement is Context, IERC721RolesManagement, ERC165 {
             erc721Contract.isApprovedForAll(owner, sender);
     }
 
+    // Allow addresses to redeem their funds
     function redeemFunds(uint256 _value) public {
         require(_value <= balances[_msgSender()], "ERC721RolesRentalAgreement: not enough funds to redeem");
 
@@ -153,9 +168,6 @@ contract ERC721RolesRentalAgreement is Context, IERC721RolesManagement, ERC165 {
 
         // Check if the transfer is successful.
         require(_attemptETHTransfer(_msgSender(), _value), "ERC721RolesRentalAgreement: ETH transfer failed");
-
-        // Emit an event.
-        emit FundsRedeemed(_msgSender(), _value, balances[_msgSender()]);
     }
 
     function _attemptETHTransfer(address _to, uint256 _value) internal returns (bool) {
